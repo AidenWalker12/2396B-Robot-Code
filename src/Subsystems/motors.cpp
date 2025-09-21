@@ -22,6 +22,9 @@ State storage1State = OFF;
 State storage2State = OFF;
 State beltState     = OFF;
 
+// Motor States
+
+
 void updateMotorStates() {
     int effectiveConfig = config;
 

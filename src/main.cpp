@@ -14,6 +14,8 @@ void initialize() {
             lemlib::Pose pose = chassis.getPose();
             pros::lcd::print(0, "X: %.2f Y: %.2f Th: %.2f", pose.x, pose.y, pose.theta);
             pros::delay(100);
+            initMotors();  // sets brake modes and motor init
+
         }
     });
 }

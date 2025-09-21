@@ -1,6 +1,8 @@
 #include "main.h"
+#include "control.cpp"
 #include "subsystems.hpp" // IWYU pragma: keep
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "autonomous/main.auto.cpp"
 
 
 void initialize() {
@@ -21,11 +23,49 @@ void initialize() {
 }
 
 void disabled() {}
-void competition_initialize() {}
+void competition_initialize() {
+        while (true) {
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+            autonmode = BLUERIGHT;
+        }
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+            autonmode = REDRIGHT;
+        }
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+            autonmode = BLUELEFT;
+        }
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
+            autonmode = BLUELEFT;
+        }
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+            autonmode = SKILLS;
+        }
+
+        // Display the current auton selection
+        pros::lcd::print(0, "Auton Selected: %d", autonmode + 1);
+
+        pros::delay(20);
+    }
+}
 
 void autonomous() {
-    chassis.setPose(0, 0, 0);
-    chassis.turnToHeading(90, 100000);
+    switch(autonmode) {
+        case BLUERIGHT:
+            autonblueright();
+            break;
+        case BLUELEFT:
+            autonblueleft();
+            break;
+        case REDRIGHT:
+            autonredright();
+            break;
+        case REDLEFT:
+            autonredleft();
+            break;
+        case SKILLS:
+            autonskills();
+            break;
+    }
 }
 
 void opcontrol() {

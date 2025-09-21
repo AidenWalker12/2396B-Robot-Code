@@ -6,3 +6,4 @@
 #include "Subsystems/storage.hpp" // IWYU pragma: keep
 #include "control.hpp" // IWYU pragma: keep
 #include "config.hpp" // IWYU pragma: keep
+#include "autonomous.hpp" // IWYU pragma: keep

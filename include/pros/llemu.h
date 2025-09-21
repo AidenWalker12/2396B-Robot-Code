@@ -3,8 +3,8 @@
 
 // TODO:? Should there be weak symbols for the C api in here as well?
 
-#include "stdbool.h"
-#include "stdint.h"
+#include "stdbool.h" // IWYU pragma: keep
+#include "stdint.h"  // IWYU pragma: keep
 
 /******************************************************************************/
 /**                        LLEMU Conditional Include                         **/

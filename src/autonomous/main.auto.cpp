@@ -1,5 +1,0 @@
-#include "blueleft.cpp"
-#include "blueright.cpp"
-#include "redleft.cpp"
-#include "redright.cpp"
-#include "skills.cpp"

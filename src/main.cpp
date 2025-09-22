@@ -49,23 +49,7 @@ void competition_initialize() {
 }
 
 void autonomous() {
-    switch(autonmode) {
-        case BLUERIGHT:
-            autonblueright();
-            break;
-        case BLUELEFT:
-            autonblueleft();
-            break;
-        case REDRIGHT:
-            autonredright();
-            break;
-        case REDLEFT:
-            autonredleft();
-            break;
-        case SKILLS:
-            autonskills();
-            break;
-    }
+
 }
 
 void opcontrol() {

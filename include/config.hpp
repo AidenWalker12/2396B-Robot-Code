@@ -23,5 +23,6 @@ enum config {
     STORAGELONG  = 4,
     UPMID        = 5,
     STORAGEDOWN  = 6,
-    STORAGEMID   = 7
+    STORAGEMID   = 7,
+    SPECIAL8     = 8
 };

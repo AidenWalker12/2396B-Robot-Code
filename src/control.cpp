@@ -1,3 +1,4 @@
+#include "config.hpp"
 #include "subsystems.hpp" // IWYU pragma: keep
 #include "main.h" // IWYU pragma: keep
 
@@ -28,6 +29,9 @@ void updateMotorStates() {
 
     if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && config == STORAGELONG) {
         effectiveConfig = STORAGEMID;
+    }
+    if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && config == STORAGELONG && Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+        effectiveConfig = SPECIAL8;
     }
 
     // Config system: assign each motor separately for clarity
@@ -87,6 +91,12 @@ void updateMotorStates() {
             storage2State = FORWARD;
             beltState     = REVERSE;
             break;
+        
+        case SPECIAL8:   // L2 + Down + Y
+            intakeState   = REVERSE;
+            storage1State = REVERSE;
+            storage2State = FORWARD;
+            beltState     = REVERSE;
     }
 
     // Apply motor velocities separately, formatted for readability

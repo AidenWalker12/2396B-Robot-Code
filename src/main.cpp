@@ -23,30 +23,7 @@ void initialize() {
 }
 
 void disabled() {}
-void competition_initialize() {
-        while (true) {
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-            autonmode = BLUERIGHT;
-        }
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
-            autonmode = REDRIGHT;
-        }
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
-            autonmode = BLUELEFT;
-        }
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) {
-            autonmode = BLUELEFT;
-        }
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
-            autonmode = SKILLS;
-        }
-
-        // Display the current auton selection
-        pros::lcd::print(0, "Auton Selected: %d", autonmode + 1);
-
-        pros::delay(20);
-    }
-}
+void competition_initialize() {}
 
 void autonomous() {
 

@@ -10,10 +10,7 @@ State intakeState = OFF;
 State storage1State = OFF;
 State storage2State = OFF;
 State beltState = OFF;
-int Config = NORUN;
-
-// Autonomous Selector
-int autonmode = SKILLS;
+int config = NORUN;
 
 void updateMotorStates() {
     int effectiveConfig = config;

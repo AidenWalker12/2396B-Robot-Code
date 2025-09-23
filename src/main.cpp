@@ -3,6 +3,7 @@
 #include "lemlib/chassis/chassis.hpp"
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/abstract_motor.hpp"
+#include "pros/adi.h"
 #include "pros/adi.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
@@ -17,12 +18,17 @@ pros::Controller Controller(pros::E_CONTROLLER_MASTER);
 
 //? Motor State Enum 
 enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
+
 //? Motor config Enum
-enum Config { NORUN = 0, UP = 1, DOWN = 2, STORAGEIN = 3, STORAGELONG = 4, UPMID = 5, STORAGEDOWN = 6, STORAGEMID = 7 };
+enum Config { NORUN = 0, UP = 1, DOWN = 2, STORAGEIN = 3, STORAGELONG = 4, UPMID = 5, STORAGEDOWN = 6, STORAGEMID = 7,  };
+
+//? Autosensor
+enum AutoR {Skills = 0, RedRight = 1, RedLeft = 2, BlueRight = 3, BlueLeft = 4 };
 
 //? Global Subsystems
 pros::adi::DigitalOut scraperDigital(1);
 pros::adi::Pneumatics scraper('A', false, false);
+pros::adi::Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
 
 pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
@@ -35,7 +41,7 @@ pros::Motor belt(15, pros::MotorGearset::green);
 //? Lemlib Odometry 
 pros::Imu imu(16);
 pros::Rotation horizontalEnc(17);
-pros::Rotation verticalEnc(18);
+pros::Rotation verticalEnc(-18);
 
 lemlib::TrackingWheel horizontal(
 						 &horizontalEnc,
@@ -52,34 +58,34 @@ lemlib::TrackingWheel vertical(
 lemlib::Drivetrain drivetrain(
 				   &leftMotors,
 				  &rightMotors,
-				   10.896752,
+				   11,
 				lemlib::Omniwheel::NEW_275,
 				          600,
 			  6
 );
 
-lemlib::ControllerSettings linearController(
-										 10,  // proportional gain (kP)
-										 0,   // integral gain (kI)
-										 3,   // derivative gain (kD)
-								0,   // anti windup
-								 0,   // small error range, in inches
-						  0, // small error range timeout, in milliseconds
-								 0,   // large error range, in inches
-						  0, // large error range timeout, in milliseconds
-									   0   // maximum acceleration (slew)
-		);
+lemlib::ControllerSettings lateralController(
+    10,                     // proportional gain (kP)
+    0,                      // integral gain (kI)
+    5,                      // derivative gain (kD)
+                                              3, // anti windup
+                                              1, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              3, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              127 // maximum acceleration (slew)
+);
 lemlib::ControllerSettings angularController(
-										  2,   // proportional gain (kP)
-										  0,   // integral gain (kI)
-										  10,  // derivative gain (kD)
-								 0,   // anti windup
-							 	  0,   // small error range, in inches
-						   0, // small error range timeout, in milliseconds
-							      0,   // large error range, in inches
-						   0, // large error range timeout, in milliseconds
-									    0    // maximum acceleration (slew)
-		);
+    4,                      // proportional gain (kP)
+    0,                      // integral gain (kI)
+    30,                     // derivative gain (kD)
+                                              5.5, // anti windup
+                                              .3, // small error range, in inches
+                                              100, // small error range timeout, in milliseconds
+                                              1, // large error range, in inches
+                                              500, // large error range timeout, in milliseconds
+                                              0 // maximum acceleration (slew)
+);
 
 lemlib::OdomSensors sensors(
 							&vertical,
@@ -94,7 +100,7 @@ lemlib::ExpoDriveCurve steerCurve(3, 10, 1.019);
 
 lemlib::Chassis chassis(
     drivetrain,
-    linearController,
+    lateralController,
     angularController,
     sensors,
     &throttleCurve,
@@ -107,12 +113,16 @@ const int STORAGE1_SPEED = 225;
 const int STORAGE2_SPEED = 300;
 const int BELT_SPEED     = 240;
 
+//autosensor
+
+
 // Global Motor States
 State intakeState   = OFF;
 State storage1State = OFF;
 State storage2State = OFF;
 State beltState     = OFF;
 int config = 0;
+int AutoR = 0;
 
 // Brake Mode 
 pros::motor_brake_mode_e brakeMode = pros::E_MOTOR_BRAKE_COAST;
@@ -145,16 +155,16 @@ void competition_initialize() {}
 void updateMotorStates() {
     int effectiveConfig = config; // baseline
 
-    //* Overrides
-    if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) && config == STORAGELONG) {
-        effectiveConfig = STORAGEDOWN;  // special belt reverse
-    }
+    // Overrides
     if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && config == UP) {
         effectiveConfig = UPMID;  // special storage/belt pattern
     }
-	if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && config == STORAGELONG) { 
+	if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) && config == STORAGELONG) { 
 		effectiveConfig = STORAGEMID; // intake only
-	}		
+	}
+    if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT) && config == STORAGELONG) {
+        effectiveConfig = STORAGEDOWN;  // special belt reverse
+    }
     //* Config System
     switch (effectiveConfig) {
         case NORUN:
@@ -199,19 +209,20 @@ void updateMotorStates() {
             beltState     = REVERSE;
             break;
 
-        case STORAGEDOWN: // L2 + Y
+        case STORAGEDOWN: // L2 + Right
             intakeState   = REVERSE;
             storage1State = REVERSE;
             storage2State = FORWARD;
             beltState     = OFF;
             break;
 
-		case STORAGEMID: // L2 + Down
+		case STORAGEMID: // L2 + Y
 			intakeState = FORWARD;
 			storage1State = REVERSE;
 			storage2State = FORWARD;
 			beltState = REVERSE;
 			break;
+ 
     }
 
     //* Apply motor velocities
@@ -229,12 +240,7 @@ void updateMotorStates() {
 }
 
 void autonomous() {
-	// Example autonomous routine
-	leftMotors.move_velocity(200);
-	rightMotors.move_velocity(200);
-	pros::delay(1000); // for 1 seconds
-	leftMotors.move_velocity(0);
-	rightMotors.move_velocity(0); // Stop
+    chassis.setPose(0,0,0);
 }
 //! Operator Control 
 void opcontrol() {

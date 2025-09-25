@@ -68,23 +68,23 @@ lemlib::ControllerSettings lateralController(
     10,                     // proportional gain (kP)
     0,                      // integral gain (kI)
     5,                      // derivative gain (kD)
-                                              3, // anti windup
-                                              1, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
-                                              3, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
-                                              127 // maximum acceleration (slew)
+    3,             // anti windup
+    1,              // small error range, in inches
+    100,     // small error range timeout, in milliseconds
+    3,              // large error range, in inches
+    500,     // large error range timeout, in milliseconds
+    127                   // maximum acceleration (slew)
 );
 lemlib::ControllerSettings angularController(
     4,                      // proportional gain (kP)
     0,                      // integral gain (kI)
     30,                     // derivative gain (kD)
-                                              5.5, // anti windup
-                                              .3, // small error range, in inches
-                                              100, // small error range timeout, in milliseconds
-                                              1, // large error range, in inches
-                                              500, // large error range timeout, in milliseconds
-                                              0 // maximum acceleration (slew)
+    5.5,           // anti windup
+    .3,             // small error range, in inches
+    100,     // small error range timeout, in milliseconds
+    1,              // large error range, in inches
+    500,     // large error range timeout, in milliseconds
+    0                     // maximum acceleration (slew)
 );
 
 lemlib::OdomSensors sensors(
@@ -156,12 +156,12 @@ void updateMotorStates() {
     int effectiveConfig = config; // baseline
 
     // Overrides
-    if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && config == UP) {
-        effectiveConfig = UPMID;  // special storage/belt pattern
-    }
 	if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) && config == STORAGELONG) { 
-		effectiveConfig = STORAGEMID; // intake only
+		effectiveConfig = STORAGEMID; // belt
 	}
+ 	if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) && config == UP) { 
+		effectiveConfig = 8; // BELT
+	}   
     if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT) && config == STORAGELONG) {
         effectiveConfig = STORAGEDOWN;  // special belt reverse
     }
@@ -222,6 +222,13 @@ void updateMotorStates() {
 			storage2State = FORWARD;
 			beltState = REVERSE;
 			break;
+        
+        case 8:
+        	intakeState = FORWARD;
+			storage1State = FORWARD;
+			storage2State = FORWARD;
+			beltState = REVERSE;
+			break;
  
     }
 
@@ -241,6 +248,14 @@ void updateMotorStates() {
 
 void autonomous() {
     chassis.setPose(0,0,0);
+    config = STORAGEIN;
+    updateMotorStates();
+    chassis.moveToPose(3.44, 26.54, 9.6, 3000,{.maxSpeed = 175 });
+    chassis.turnToHeading(-57, 1000);
+    chassis.moveToPoint(-9.74, 36.03, 3000);
+    pros::delay(500);
+    config = STORAGEDOWN;
+    updateMotorStates();
 }
 //! Operator Control 
 void opcontrol() {

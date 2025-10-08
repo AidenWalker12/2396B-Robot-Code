@@ -22,17 +22,25 @@ enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
 //? Motor config Enum
 enum Config { NORUN = 0, UP = 1, DOWN = 2, STORAGEIN = 3, STORAGELONG = 4, UPMID = 5, STORAGEDOWN = 6, STORAGEMID = 7,  };
 
-//? Autosensor
-enum AutoR {Skills = 0, RedRight = 1, RedLeft = 2, BlueRight = 3, BlueLeft = 4 };
+
+//?
+enum GLPConfig {FULLOFF = 0, SCRAPERON = 1, GLPON = 2};
 
 //? Global Subsystems
+    //* ADI Ports
 pros::adi::DigitalOut scraperDigital(1);
+
+
 pros::adi::Pneumatics scraper('A', false, false);
+pros::adi::Pneumatics glp('C', true, false );
+
 pros::adi::Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
 
+    //* Motor Groups
 pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
 
+    //* Individual Motors
 pros::Motor intake(13, pros::MotorGearset::green);
 pros::Motor storage1(-3, pros::MotorGearset::green);
 pros::Motor storage2(14, pros::MotorGearset::green);
@@ -46,22 +54,22 @@ pros::Rotation verticalEnc(-18);
 lemlib::TrackingWheel horizontal(
 						 &horizontalEnc,
 				   lemlib::Omniwheel::NEW_2,
-					    -6.7
+					    7
 	);
 
 lemlib::TrackingWheel vertical(
 						&verticalEnc,
 				  lemlib::Omniwheel::NEW_2,
-					   -0.5
+					   -.5
 	);
 
 lemlib::Drivetrain drivetrain(
 				   &leftMotors,
 				  &rightMotors,
-				   11,
+				   11.75,
 				lemlib::Omniwheel::NEW_275,
 				          600,
-			  6
+			  1
 );
 
 lemlib::ControllerSettings lateralController(
@@ -99,12 +107,12 @@ lemlib::ExpoDriveCurve throttleCurve(3, 10, 1.019);
 lemlib::ExpoDriveCurve steerCurve(3, 10, 1.019);
 
 lemlib::Chassis chassis(
-    drivetrain,
-    lateralController,
-    angularController,
-    sensors,
-    &throttleCurve,
-    &steerCurve
+                        drivetrain,
+        lateralController,
+       angularController,
+                        sensors,
+         &throttleCurve,
+            &steerCurve
 );
 
 // Constraints
@@ -123,9 +131,7 @@ State storage2State = OFF;
 State beltState     = OFF;
 int config = 0;
 int AutoR = 0;
-
-// Brake Mode 
-pros::motor_brake_mode_e brakeMode = pros::E_MOTOR_BRAKE_COAST;
+int GLPConfig = 0;
 
 //! Initialize 
 void initialize() {
@@ -139,11 +145,16 @@ void initialize() {
     leftMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
     rightMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 
+    pros::delay(500);
+
+
     pros::Task screenTask([]() {
         while (true) {
-            lemlib::Pose pose = chassis.getPose();
-            pros::lcd::print(0, "X: %.2f Y: %.2f Th: %.2f", pose.x, pose.y, pose.theta);
-            pros::delay(100);
+        lemlib::Pose pose = chassis.getPose();
+float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
+        pros::lcd::print(0, "X: %.2f Y: %.2f Th: %.2f", pose.x, pose.y, pose.theta);
+        pros::lcd::print(1, "Angle: %.1f", angle);
+        pros::delay(100);
         }
     });
 }
@@ -246,20 +257,92 @@ void updateMotorStates() {
                        beltState == REVERSE ? -BELT_SPEED : 0);
 }
 
-void autonomous() {
+void GLP() {
+    switch (GLPConfig) {
+        case FULLOFF:
+            scraper.set_value(false);
+            glp.set_value(true);
+            break;
+        case SCRAPERON:
+            scraper.set_value(true);
+            glp.set_value(true);
+            break;
+        case GLPON:
+            scraper.set_value(false);
+            glp.set_value(false);
+            break;
+    }
+
+}
+
+
+
+void RedLeft() {
     chassis.setPose(0,0,0);
-    config = STORAGEIN;
+    chassis.moveToPoint(-.43, 13, 3000);
+    chassis.turnToHeading(-44.68, 1000);
+    config = UP;
     updateMotorStates();
-    chassis.moveToPose(3.44, 26.54, 9.6, 3000,{.maxSpeed = 175 });
-    chassis.turnToHeading(-57, 1000);
-    chassis.moveToPoint(-9.74, 36.03, 3000);
-    pros::delay(500);
-    config = STORAGEDOWN;
+    chassis.moveToPoint(-.97, 28.24, 2000);
+    chassis.turnToHeading(39.55, 1000);
+    chassis.moveToPoint(-9.04, 40, 2000);
+    chassis.turnToHeading(44.08, 1000);
+    pros::delay(1000);
+    config = DOWN;
     updateMotorStates();
+    pros::delay(2000);
+    config = NORUN;
+    updateMotorStates();
+}
+
+void BlueLeft()  {
+
+}
+
+void BlueRight() {
+
+}
+void RedRight()  {
+    chassis.setPose(0,0,0);
+    chassis.moveToPoint(.43, 13, 3000);
+    chassis.turnToHeading(44.68, 1000);
+    config = UP;
+    updateMotorStates();
+    chassis.moveToPoint(.97, 28.24, 2000);
+    chassis.turnToHeading(-39.55, 1000);
+    chassis.moveToPoint(9.04, 40, 2000);
+    chassis.turnToHeading(-44.08, 1000);
+    pros::delay(1000);
+    config = DOWN;
+    updateMotorStates();
+    pros::delay(2000);
+    config = NORUN;
+    updateMotorStates();
+}
+void autonomous() {
+
+    float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
+    if(angle >= 0 && angle  <= 30 ) {
+        pros::lcd::print(3, "Left Red");
+        RedLeft();
+    }
+    else if(angle > 30 && angle <= 125) {
+        pros::lcd::print(3, "Left Blue");
+    }
+    else if(angle > 125 && angle <= 240) {
+        pros::lcd::print(3, "Right Blue");
+    }
+    else if(angle > 240 && angle <= 270) {
+        pros::lcd::print(3, "Right Red");
+        RedRight();
+    }
+
 }
 //! Operator Control 
 void opcontrol() {
     while (true) {
+
+
         // Arcade drive 
         int leftY  = Controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = Controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
@@ -271,13 +354,13 @@ void opcontrol() {
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) config = (config == STORAGEIN)  ? NORUN : STORAGEIN;
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) config = (config == STORAGELONG) ? NORUN : STORAGELONG;
 
+        //? Gem Loss Protection
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) GLPConfig = (GLPConfig == SCRAPERON) ? FULLOFF : SCRAPERON;
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) GLPConfig = (GLPConfig == GLPON) ? FULLOFF : GLPON;
         //! Update motors 
         updateMotorStates();
-
-        // Pneumatic toggle 
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
-            scraper.toggle();
-        }
+        //! Update GLP
+        GLP();
 
         pros::delay(10);
     }

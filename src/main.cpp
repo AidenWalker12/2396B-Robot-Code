@@ -23,28 +23,32 @@ enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
 enum Config { NORUN = 0, UP = 1, DOWN = 2, STORAGEIN = 3, STORAGELONG = 4, UPMID = 5, STORAGEDOWN = 6, STORAGEMID = 7,  };
 
 
-//?
+//? GLP Enum
 enum GLPConfig {FULLOFF = 0, SCRAPERON = 1, GLPON = 2};
+
+//? Team Enum
+enum Team {Default = 0, Red = 1, Blue = 2};
+
 
 //? Global Subsystems
     //* ADI Ports
-pros::adi::DigitalOut scraperDigital(1);
+    pros::adi::DigitalOut scraperDigital(1);
 
 
-pros::adi::Pneumatics scraper('A', false, false);
-pros::adi::Pneumatics glp('C', true, false );
+    pros::adi::Pneumatics scraper('A', false, false);
+    pros::adi::Pneumatics glp('C', true, false );
 
-pros::adi::Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
+    pros::adi::Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
 
     //* Motor Groups
-pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
-pros::MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
+    pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
+    pros::MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
 
     //* Individual Motors
-pros::Motor intake(13, pros::MotorGearset::green);
-pros::Motor storage1(-3, pros::MotorGearset::green);
-pros::Motor storage2(14, pros::MotorGearset::green);
-pros::Motor belt(15, pros::MotorGearset::green);
+    pros::Motor intake(13, pros::MotorGearset::green);
+    pros::Motor storage1(-3, pros::MotorGearset::green);
+    pros::Motor storage2(14, pros::MotorGearset::green);
+    pros::Motor belt(15, pros::MotorGearset::green);
 
 //? Lemlib Odometry 
 pros::Imu imu(16);
@@ -73,25 +77,25 @@ lemlib::Drivetrain drivetrain(
 );
 
 lemlib::ControllerSettings lateralController(
-    10,                     // proportional gain (kP)
-    0,                      // integral gain (kI)
-    5,                      // derivative gain (kD)
+    9,                     // proportional gain (kP)
+    1,                      // integral gain (kI)
+    11,                      // derivative gain (kD)
     3,             // anti windup
-    1,              // small error range, in inches
+    .5,              // small error range, in inches
     100,     // small error range timeout, in milliseconds
-    3,              // large error range, in inches
+    1.5,              // large error range, in inches
     500,     // large error range timeout, in milliseconds
     127                   // maximum acceleration (slew)
 );
 lemlib::ControllerSettings angularController(
     4,                      // proportional gain (kP)
     0,                      // integral gain (kI)
-    30,                     // derivative gain (kD)
+    13,                     // derivative gain (kD)
     5.5,           // anti windup
     .3,             // small error range, in inches
-    100,     // small error range timeout, in milliseconds
-    1,              // large error range, in inches
-    500,     // large error range timeout, in milliseconds
+    200,     // small error range timeout, in milliseconds
+    .5,              // large error range, in inches
+        1000,     // large error range timeout, in milliseconds
     0                     // maximum acceleration (slew)
 );
 
@@ -129,6 +133,7 @@ State intakeState   = OFF;
 State storage1State = OFF;
 State storage2State = OFF;
 State beltState     = OFF;
+int Team = Default;
 int config = 0;
 int AutoR = 0;
 int GLPConfig = 0;
@@ -304,22 +309,30 @@ void BlueRight() {
 }
 void RedRight()  {
     chassis.setPose(0,0,0);
-    chassis.moveToPoint(.43, 13, 3000);
-    chassis.turnToHeading(44.68, 1000);
+    chassis.moveToPoint(0, 13.5, 2500);
+    chassis.turnToHeading(41.45, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .earlyExitRange = 5});
     config = UP;
     updateMotorStates();
-    chassis.moveToPoint(.97, 28.24, 2000);
-    chassis.turnToHeading(-39.55, 1000);
-    chassis.moveToPoint(9.04, 40, 2000);
-    chassis.turnToHeading(-44.08, 1000);
-    pros::delay(1000);
+    chassis.moveToPoint(.97, 27.74, 2000);
+    chassis.turnToHeading(-45,500, {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE});
+    pros::delay(500);
+    config = NORUN;
+    updateMotorStates();
+    chassis.turnToHeading(-45,200, {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE});
+    chassis.moveToPoint(8.38, 40.56, 1000, {.maxSpeed = 300});
+    chassis.turnToHeading(-47, 400);
+    pros::delay(500);
     config = DOWN;
     updateMotorStates();
-    pros::delay(2000);
+    pros::delay(1000);
+    config = UP;
+    updateMotorStates();
+    pros::delay(500);
     config = NORUN;
     updateMotorStates();
 }
 void autonomous() {
+
 
     float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
     if(angle >= 0 && angle  <= 30 ) {
@@ -328,9 +341,11 @@ void autonomous() {
     }
     else if(angle > 30 && angle <= 125) {
         pros::lcd::print(3, "Left Blue");
+        BlueLeft();
     }
     else if(angle > 125 && angle <= 240) {
         pros::lcd::print(3, "Right Blue");
+        BlueRight();
     }
     else if(angle > 240 && angle <= 270) {
         pros::lcd::print(3, "Right Red");
@@ -340,6 +355,7 @@ void autonomous() {
 }
 //! Operator Control 
 void opcontrol() {
+    
     while (true) {
 
 
@@ -348,17 +364,40 @@ void opcontrol() {
         int rightX = Controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         chassis.arcade(leftY, rightX, false, 0.75);
 
+        // //? Alliance Color
+        // float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
+
+        // if(angle >= 0 && angle  <= 30 ) {
+        //     pros::lcd::print(3, "Left Red");
+        //     Team = Red;
+        // }
+        // else if(angle > 30 && angle <= 125) {
+        //     pros::lcd::print(3, "Left Blue");
+        //     Team = Blue;
+        // }
+        // else if(angle > 125 && angle <= 240) {
+        //     pros::lcd::print(3, "Right Blue");
+        //     Team = Blue;
+        // }
+        // else if(angle > 240 && angle <= 270) {
+        //     pros::lcd::print(3, "Right Red");
+        //     Team = Red;
+        // }
+
+    //* Button Presses
         //? Config toggles 
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) config = (config == UP)         ? NORUN : UP;
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) config = (config == DOWN)       ? NORUN : DOWN;
-        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) config = (config == STORAGEIN)  ? NORUN : STORAGEIN;
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) config = (config == UP)          ? NORUN : UP;
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) config = (config == DOWN)        ? NORUN : DOWN;
+        if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) config = (config == STORAGEIN)   ? NORUN : STORAGEIN;
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) config = (config == STORAGELONG) ? NORUN : STORAGELONG;
 
         //? Gem Loss Protection
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) GLPConfig = (GLPConfig == SCRAPERON) ? FULLOFF : SCRAPERON;
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) GLPConfig = (GLPConfig == GLPON) ? FULLOFF : GLPON;
+
         //! Update motors 
         updateMotorStates();
+        
         //! Update GLP
         GLP();
 

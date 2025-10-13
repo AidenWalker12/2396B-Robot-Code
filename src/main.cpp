@@ -22,7 +22,6 @@ enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
 //? Motor config Enum
 enum Config { NORUN = 0, UP = 1, DOWN = 2, STORAGEIN = 3, STORAGELONG = 4, UPMID = 5, STORAGEDOWN = 6, STORAGEMID = 7,  };
 
-
 //? GLP Enum
 enum GLPConfig {FULLOFF = 0, SCRAPERON = 1, GLPON = 2};
 
@@ -137,6 +136,11 @@ int Team = Default;
 int config = 0;
 int AutoR = 0;
 int GLPConfig = 0;
+int effectiveConfig = 0;
+int effectiveTeam = 0;
+
+// Color Sort
+bool ColorSortRan = false;
 
 //! Initialize 
 void initialize() {
@@ -169,7 +173,13 @@ void competition_initialize() {}
 
 //! Update Motor States 
 void updateMotorStates() {
-    int effectiveConfig = config; // baseline
+    if(ColorSortRan == true) {
+        config = effectiveConfig;
+    }
+    else if(ColorSortRan == false) {
+        effectiveConfig = config; // baseline
+    }
+
 
     // Overrides
 	if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) && config == STORAGELONG) { 
@@ -280,24 +290,46 @@ void GLP() {
 
 }
 
+void Alliance() {
+    effectiveTeam = Team;
+    //? Alliance Color
+        float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
 
+        if(angle >= 0 && angle  <= 30 ) {
+            pros::lcd::print(3, "Left Red");
+            Team = Red;
+        }
+        else if(angle > 30 && angle <= 125) {
+            pros::lcd::print(3, "Left Blue");
+            Team = Blue;
+        }
+        else if(angle > 125 && angle <= 240) {
+            pros::lcd::print(3, "Right Blue");
+            Team = Blue;
+        }
+        else if(angle > 240 && angle <= 270) {
+            pros::lcd::print(3, "Right Red");
+            Team = Red;
+        }
+
+}
 
 void RedLeft() {
-    chassis.setPose(0,0,0);
-    chassis.moveToPoint(-.43, 13, 3000);
-    chassis.turnToHeading(-44.68, 1000);
-    config = UP;
-    updateMotorStates();
-    chassis.moveToPoint(-.97, 28.24, 2000);
-    chassis.turnToHeading(39.55, 1000);
-    chassis.moveToPoint(-9.04, 40, 2000);
-    chassis.turnToHeading(44.08, 1000);
-    pros::delay(1000);
-    config = DOWN;
-    updateMotorStates();
-    pros::delay(2000);
-    config = NORUN;
-    updateMotorStates();
+    // chassis.setPose(0,0,0);
+    // chassis.moveToPoint(-.43, 13, 3000);
+    // chassis.turnToHeading(-44.68, 1000);
+    // config = UP;
+    // updateMotorStates();
+    // chassis.moveToPoint(-.97, 28.24, 2000);
+    // chassis.turnToHeading(39.55, 1000);
+    // chassis.moveToPoint(-9.04, 40, 2000);
+    // chassis.turnToHeading(44.08, 1000);
+    // pros::delay(1000);
+    // config = DOWN;
+    // updateMotorStates();
+    // pros::delay(2000);
+    // config = NORUN;
+    // updateMotorStates();
 }
 
 void BlueLeft()  {
@@ -314,7 +346,7 @@ void RedRight()  {
     config = UP;
     updateMotorStates();
     chassis.moveToPoint(.97, 27.74, 2000);
-    chassis.turnToHeading(-45,500, {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE});
+    chassis.turnToHeading(-45,500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
     pros::delay(500);
     config = NORUN;
     updateMotorStates();
@@ -330,6 +362,8 @@ void RedRight()  {
     pros::delay(500);
     config = NORUN;
     updateMotorStates();
+    // chassis.moveToPoint(0,0,2000, {.forwards = false});
+    // chassis.turnToHeading(180,1000);
 }
 void autonomous() {
 
@@ -355,36 +389,22 @@ void autonomous() {
 }
 //! Operator Control 
 void opcontrol() {
+    //! Alliance Color
+    // Alliance();
+    // Resetting the motor states for Operator Control
+    State intakeState   = OFF;
+    State storage1State = OFF;
+    State storage2State = OFF;
+    State beltState     = OFF;
     
     while (true) {
-
 
         // Arcade drive 
         int leftY  = Controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
         int rightX = Controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         chassis.arcade(leftY, rightX, false, 0.75);
 
-        // //? Alliance Color
-        // float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
-
-        // if(angle >= 0 && angle  <= 30 ) {
-        //     pros::lcd::print(3, "Left Red");
-        //     Team = Red;
-        // }
-        // else if(angle > 30 && angle <= 125) {
-        //     pros::lcd::print(3, "Left Blue");
-        //     Team = Blue;
-        // }
-        // else if(angle > 125 && angle <= 240) {
-        //     pros::lcd::print(3, "Right Blue");
-        //     Team = Blue;
-        // }
-        // else if(angle > 240 && angle <= 270) {
-        //     pros::lcd::print(3, "Right Red");
-        //     Team = Red;
-        // }
-
-    //* Button Presses
+    
         //? Config toggles 
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) config = (config == UP)          ? NORUN : UP;
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) config = (config == DOWN)        ? NORUN : DOWN;
@@ -395,11 +415,38 @@ void opcontrol() {
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) GLPConfig = (GLPConfig == SCRAPERON) ? FULLOFF : SCRAPERON;
         if (Controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) GLPConfig = (GLPConfig == GLPON) ? FULLOFF : GLPON;
 
+        //? Emergency Shutoff for Color Sort
+        if (Controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) &&
+            Controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP) &&
+            Controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT) &&
+            Controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
+            Team = (Team == Default) ? effectiveTeam : Default;
+            effectiveTeam = Team;
+            }
         //! Update motors 
         updateMotorStates();
         
         //! Update GLP
         GLP();
+
+        //? Color Sort
+        if (Team == Red /* && vision detected == blue */) {
+            //todo config = DOWN;
+            //todo updateMotorStates();
+            //todo when sight ends
+            //todo ColorSortRan = True;
+            //todo updateMotorStates();
+            //todo }
+        }
+        else if (Team == Blue /* && vision detected == red */) {
+            //todo config = DOWN;
+            //todo updateMotorStates();
+            //todo when sight ends
+            //todo ColorSortRan = True;
+            //todo updateMotorStates();
+            //todo }
+        }
+
 
         pros::delay(10);
     }

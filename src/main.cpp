@@ -5,15 +5,27 @@
 #include "pros/abstract_motor.hpp"
 #include "pros/adi.h"
 #include "pros/adi.hpp"
+#include "pros/ai_vision.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/motors.h"
 #include "pros/motors.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/rtos.hpp"
+#include "pros/vision.hpp"
 #include <math.h>
 
-//? Controller 
+//? Controller
+using pros::AIVision;
+using pros::Imu;
+using pros::Motor;
+using pros::MotorGroup;
+using pros::Rotation;
+using pros::Vision;
+using pros::adi::DigitalOut;
+using pros::adi::Pneumatics;
+using pros::adi::Potentiometer;
+
 pros::Controller Controller(pros::E_CONTROLLER_MASTER);
 
 //? Motor State Enum 
@@ -31,33 +43,33 @@ enum Team {Default = 0, Red = 1, Blue = 2};
 
 //? Global Subsystems
     //* ADI Ports
-    pros::adi::DigitalOut scraperDigital(1);
+DigitalOut scraperDigital(1);
+AIVision ColorSort(20);
 
+Pneumatics scraper('A', false, false);
+Pneumatics glp('C', true, false);
 
-    pros::adi::Pneumatics scraper('A', false, false);
-    pros::adi::Pneumatics glp('C', true, false );
+Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
 
-    pros::adi::Potentiometer autosensor('B', pros::E_ADI_POT_EDR);
+//* Motor Groups
+MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
+MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
 
-    //* Motor Groups
-    pros::MotorGroup leftMotors({-1, -2}, pros::MotorGearset::blue);
-    pros::MotorGroup rightMotors({11, 12}, pros::MotorGearset::blue);
+//* Individual Motors
+Motor intake(13, pros::MotorGearset::green);
+Motor storage1(-3, pros::MotorGearset::green);
+Motor storage2(14, pros::MotorGearset::green);
+Motor belt(15, pros::MotorGearset::green);
 
-    //* Individual Motors
-    pros::Motor intake(13, pros::MotorGearset::green);
-    pros::Motor storage1(-3, pros::MotorGearset::green);
-    pros::Motor storage2(14, pros::MotorGearset::green);
-    pros::Motor belt(15, pros::MotorGearset::green);
-
-//? Lemlib Odometry 
-pros::Imu imu(16);
-pros::Rotation horizontalEnc(17);
-pros::Rotation verticalEnc(-18);
+//? Lemlib Odometry
+Imu imu(16);
+Rotation horizontalEnc(17);
+Rotation verticalEnc(-18);
 
 lemlib::TrackingWheel horizontal(
 						 &horizontalEnc,
 				   lemlib::Omniwheel::NEW_2,
-					    7
+					    7.0
 	);
 
 lemlib::TrackingWheel vertical(
@@ -76,9 +88,9 @@ lemlib::Drivetrain drivetrain(
 );
 
 lemlib::ControllerSettings lateralController(
-    9,                     // proportional gain (kP)
+    8,                     // proportional gain (kP)
     1,                      // integral gain (kI)
-    11,                      // derivative gain (kD)
+    5,                      // derivative gain (kD)
     3,             // anti windup
     .5,              // small error range, in inches
     100,     // small error range timeout, in milliseconds
@@ -146,6 +158,7 @@ bool ColorSortRan = false;
 void initialize() {
     pros::lcd::initialize();
     chassis.calibrate();
+
 
     intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
     storage1.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
@@ -272,6 +285,7 @@ void updateMotorStates() {
                        beltState == REVERSE ? -BELT_SPEED : 0);
 }
 
+
 void GLP() {
     switch (GLPConfig) {
         case FULLOFF:
@@ -316,18 +330,25 @@ void Alliance() {
 
 void RedLeft() {
     // chassis.setPose(0,0,0);
-    // chassis.moveToPoint(-.43, 13, 3000);
-    // chassis.turnToHeading(-44.68, 1000);
+    // chassis.moveToPoint(0, 13.5, 2500);
+    // chassis.turnToHeading(-41.45, 1000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE, .earlyExitRange = 5});
     // config = UP;
     // updateMotorStates();
-    // chassis.moveToPoint(-.97, 28.24, 2000);
-    // chassis.turnToHeading(39.55, 1000);
-    // chassis.moveToPoint(-9.04, 40, 2000);
-    // chassis.turnToHeading(44.08, 1000);
-    // pros::delay(1000);
-    // config = DOWN;
+    // chassis.moveToPoint(-.97, 27.74, 2000);
+    // chassis.turnToHeading(45,500, {.direction = AngularDirection::CW_CLOCKWISE});
+    // pros::delay(500);
+    // config = NORUN;
     // updateMotorStates();
-    // pros::delay(2000);
+    // chassis.turnToHeading(45,200, {.direction = lemlib::AngularDirection::CW_CLOCKWISE});
+    // chassis.moveToPoint(-8.38, 40.56, 1000, {.maxSpeed = 300});
+    // chassis.turnToHeading(47, 400);
+    // pros::delay(500);
+    // config = UPMID;
+    // updateMotorStates();
+    // pros::delay(1000);
+    // config = UP;
+    // updateMotorStates();
+    // pros::delay(500);
     // config = NORUN;
     // updateMotorStates();
 }
@@ -341,19 +362,19 @@ void BlueRight() {
 }
 void RedRight()  {
     chassis.setPose(0,0,0);
-    chassis.moveToPoint(0, 13.5, 2500);
+    chassis.moveToPoint(0, 13.5, 2500, {.maxSpeed = 300});
     chassis.turnToHeading(41.45, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .earlyExitRange = 5});
     config = UP;
     updateMotorStates();
     chassis.moveToPoint(.97, 27.74, 2000);
-    chassis.turnToHeading(-45,500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-    pros::delay(500);
+    chassis.turnToHeading(0,500);
+    chassis.turnToHeading(30,500);
     config = NORUN;
     updateMotorStates();
-    chassis.turnToHeading(-45,200, {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE});
-    chassis.moveToPoint(8.38, 40.56, 1000, {.maxSpeed = 300});
-    chassis.turnToHeading(-47, 400);
-    pros::delay(500);
+    chassis.moveToPoint(8, 42, 4000);
+    chassis.turnToHeading(-45, 400);
+
+
     config = DOWN;
     updateMotorStates();
     pros::delay(1000);
@@ -389,6 +410,7 @@ void autonomous() {
 }
 //! Operator Control 
 void opcontrol() {
+
     //! Alliance Color
     // Alliance();
     // Resetting the motor states for Operator Control
@@ -429,23 +451,25 @@ void opcontrol() {
         //! Update GLP
         GLP();
 
-        //? Color Sort
-        if (Team == Red /* && vision detected == blue */) {
-            //todo config = DOWN;
-            //todo updateMotorStates();
-            //todo when sight ends
-            //todo ColorSortRan = True;
-            //todo updateMotorStates();
-            //todo }
-        }
-        else if (Team == Blue /* && vision detected == red */) {
-            //todo config = DOWN;
-            //todo updateMotorStates();
-            //todo when sight ends
-            //todo ColorSortRan = True;
-            //todo updateMotorStates();
-            //todo }
-        }
+
+
+        // //? Color Sort
+        // if (Team == Red /* && vision detected == blue */) {
+        //     //todo config = DOWN;
+        //     //todo updateMotorStates();
+        //     //todo when sight ends
+        //     //todo ColorSortRan = True;
+        //     //todo updateMotorStates();
+        //     //todo }
+        // }
+        // else if (Team == Blue /* && vision detected == red */) {
+        //     //todo config = DOWN;
+        //     //todo updateMotorStates();
+        //     //todo when sight ends
+        //     //todo ColorSortRan = True;
+        //     //todo updateMotorStates();
+        //     //todo }
+        // }
 
 
         pros::delay(10);

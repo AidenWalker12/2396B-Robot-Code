@@ -35,11 +35,13 @@
 #define PROS_USE_LITERALS
 
 #include "api.h" // IWYU pragma: keep
+// Add lemlib declarations for shared globals used across source files
+#include "lemlib/api.hpp" // IWYU pragma: keep
 
 /**
  * You should add more #includes here
  */
-//#include "okapi/api.hpp"
+
 
 /**
  * If you find doing pros::Motor() to be tedious and you'd prefer just to do
@@ -49,9 +51,7 @@
  * concurrently! The okapi namespace will export all symbols inside the pros
  * namespace.
  */
-// using namespace pros;
-// using namespace pros::literals;
-// using namespace okapi;
+using namespace pros;
 
 /**
  * Prototypes for the competition control tasks are redefined here to ensure
@@ -74,7 +74,31 @@ void opcontrol(void);
 /**
  * You can add C++-only headers here
  */
-//#include <iostream>
-#endif
+#include <iostream> // IWYU pragma: keep
+#endif  // __cplusplus
+
+// Shared globals and types used across multiple translation units
+// Motor / sensor types are available via `api.h` and `lemlib/api.hpp` above
+// Motor state enums
+enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
+enum Config { NORUN = 0, UP = 1, DOWN = 2, CENTERGOAL = 3, STORAGELONG = 4 };
+
+// Forward declarations for shared globals (defined in src/main.cpp)
+extern Controller MasterController;
+extern MotorGroup leftMotors;
+extern MotorGroup rightMotors;
+extern Motor intake;
+extern Motor firststage;
+extern Motor secondstage;
+
+extern Imu imu;
+extern Rotation horizontalEnc;
+extern Rotation verticalEnc;
+
+extern int config;
+extern int effectiveConfig;
+
+// Shared function prototypes
+void updateMotorStates();
 
 #endif  // _PROS_MAIN_H_

@@ -50,9 +50,9 @@ void opcontrol() {
         chassis.arcade(leftY, rightX, false, 0.75);
 
         // Config toggles 
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) config = (config == UP)          ? NORUN : UP;
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) config = (config == DOWN)        ? NORUN : DOWN;
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) config = (config == CENTERGOAL)   ? NORUN : CENTERGOAL;
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) config = (config == CENTERGOAL)          ? NORUN : CENTERGOAL;
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) config = (config == UP)        ? NORUN : UP;
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) config = (config == DOWN)   ? NORUN : DOWN;
 
         updateMotorStates();
         if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {

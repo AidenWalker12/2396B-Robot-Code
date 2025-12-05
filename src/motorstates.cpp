@@ -1,15 +1,18 @@
 #include "main.h"
+#include "pros/motors.hpp"
 
 //* Individual Motors
 Motor intake(10, pros::MotorGearset::green);
 Motor firststage(-1, pros::MotorGearset::green);
 Motor secondstage(2, pros::MotorGearset::green);
+Motor top(8, pros::MotorGearset::green);
 //todo there will be more motors later
 
 // Global Motor States
 State intakeState   = OFF;
 State firststageState = OFF;
 State secondstageState = OFF;
+State topState = OFF;
 int config = 0;
 int effectiveConfig = 0;
 
@@ -17,6 +20,7 @@ int effectiveConfig = 0;
 const int INTAKE_SPEED   = 300;
 const int FIRSTSTAGE_SPEED = 300;
 const int SECONDSTAGE_SPEED = 300;
+const int TOP_SPEED = 300;
 
 //! Update Motor States 
 void updateMotorStates() {
@@ -27,24 +31,28 @@ effectiveConfig = config;
             intakeState   = OFF;
             firststageState = OFF;
             secondstageState = OFF;
+            topState = OFF;
             break;
 
         case UP: // R1
             intakeState   = FORWARD;
             firststageState = FORWARD;
             secondstageState = FORWARD;
+            topState = FORWARD;
             break;
 
         case DOWN: // L1
             intakeState   = REVERSE;
             firststageState = REVERSE;
             secondstageState = REVERSE;
+            topState = REVERSE;
             break;
 
         case CENTERGOAL: // L2
             intakeState   = FORWARD;
             firststageState = FORWARD;
             secondstageState = REVERSE;
+            topState = REVERSE;
             break;
 
         
@@ -52,12 +60,15 @@ effectiveConfig = config;
 
     //* Apply motor velocities
     intake.move_velocity(intakeState == FORWARD ? INTAKE_SPEED :
-                         intakeState == REVERSE ? -INTAKE_SPEED : 0);
+                        intakeState == REVERSE ? -INTAKE_SPEED : 0);
 
     firststage.move_velocity(firststageState == FORWARD ? FIRSTSTAGE_SPEED :
-                           firststageState == REVERSE ? -FIRSTSTAGE_SPEED : 0);
+                        firststageState == REVERSE ? -FIRSTSTAGE_SPEED : 0);
 
     secondstage.move_velocity(secondstageState == FORWARD ? SECONDSTAGE_SPEED :
-                           secondstageState == REVERSE ? -SECONDSTAGE_SPEED : 0);
+                        secondstageState == REVERSE ? -SECONDSTAGE_SPEED : 0);
+
+    top.move_velocity(topState == FORWARD ? TOP_SPEED :
+                        topState == REVERSE ? -TOP_SPEED : 0);                  
 
 }

@@ -1,5 +1,6 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "pros/adi.hpp"
 
 
 void updateMotorStates();
@@ -7,6 +8,7 @@ extern int config;
 extern int GLPConfig;
 extern lemlib::Chassis chassis;
 Controller MasterController(pros::E_CONTROLLER_MASTER);
+pros::adi::Pneumatics scraper('D', false, false);
 
 
 //! Initialize 
@@ -53,6 +55,9 @@ void opcontrol() {
         if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)) config = (config == CENTERGOAL)   ? NORUN : CENTERGOAL;
 
         updateMotorStates();
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+        scraper.toggle();
+        }
 
         pros::delay(10);
     }

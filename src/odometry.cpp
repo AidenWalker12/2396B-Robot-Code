@@ -6,7 +6,7 @@ MotorGroup leftMotors({-11, 12, -13}, pros::MotorGearset::blue);
 MotorGroup rightMotors({20, -19, 18}, pros::MotorGearset::blue);
 
 //? Lemlib Odometry
-Imu imu(25);
+Imu imu(15);
 Rotation horizontalEnc(26);
 Rotation verticalEnc(27);
 
@@ -19,16 +19,16 @@ lemlib::TrackingWheel horizontal(
 lemlib::TrackingWheel vertical(
 						&verticalEnc,
 				  lemlib::Omniwheel::NEW_2,
-					   -.5
+					   .67
 	);
 
 lemlib::Drivetrain drivetrain(
-				   &leftMotors,
-				  &rightMotors,
-				   12.5,
-				lemlib::Omniwheel::NEW_325,
-				          450,
-			  1
+	&leftMotors,
+	&rightMotors,
+	12.5,
+	lemlib::Omniwheel::NEW_325,
+	450,
+	1
 );
 
 lemlib::ControllerSettings lateralController(
@@ -50,7 +50,7 @@ lemlib::ControllerSettings angularController(
     .3,             // small error range, in inches
     200,     // small error range timeout, in milliseconds
     .5,              // large error range, in inches
-        1000,     // large error range timeout, in milliseconds
+    1000,     // large error range timeout, in milliseconds
     0                     // maximum acceleration (slew)
 );
 

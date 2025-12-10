@@ -9,6 +9,7 @@ extern int GLPConfig;
 extern lemlib::Chassis chassis;
 Controller MasterController(pros::E_CONTROLLER_MASTER);
 pros::adi::Pneumatics scraper('D', false, false);
+pros::adi::Pneumatics hood('C' , false, false);
 
 
 //! Initialize 
@@ -38,7 +39,19 @@ void initialize() {
 void disabled() {}
 void competition_initialize() {}
 
-void autonomous() {}
+void autonomous() {
+    //     float angle = (float)autosensor.get_value() * (270.0 / 4095.0); // for V1 270 rotation
+    // if(angle >= 0 && angle  <= 30 ) {
+    //     pros::lcd::print(3, "Left Red");
+    //     RedLeft();
+    // }
+    // else if(angle > 30 && angle <= 125) {
+    //     pros::lcd::print(3, "Left Blue");
+    //     BlueLeft();
+    // }
+    // else if(angle > 125 && angle <= 240) {
+    chassis.turnToHeading(360, 999999);
+}
 //! Operator Control 
 void opcontrol() {
 
@@ -58,7 +71,9 @@ void opcontrol() {
         if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
         scraper.toggle();
         }
-
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+        hood.toggle();
+        }
         pros::delay(10);
     }
 }

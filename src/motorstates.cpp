@@ -4,9 +4,8 @@
 //* Individual Motors
 Motor intake(10, pros::MotorGearset::green);
 Motor firststage(-1, pros::MotorGearset::green);
-Motor secondstage(2, pros::MotorGearset::green);
+Motor secondstage(-2, pros::MotorGearset::green);
 Motor top(8, pros::MotorGearset::green);
-//todo there will be more motors later
 
 // Global Motor States
 State intakeState   = OFF;

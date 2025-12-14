@@ -33,21 +33,21 @@ effectiveConfig = config;
             topState = OFF;
             break;
 
-        case UP: // R1
+        case UP: // L1
             intakeState   = FORWARD;
             firststageState = FORWARD;
             secondstageState = FORWARD;
             topState = FORWARD;
             break;
 
-        case DOWN: // L1
+        case DOWN: // L2
             intakeState   = REVERSE;
             firststageState = REVERSE;
             secondstageState = REVERSE;
             topState = REVERSE;
             break;
 
-        case CENTERGOAL: // L2
+        case CENTERGOAL: // R1
             intakeState   = FORWARD;
             firststageState = FORWARD;
             secondstageState = REVERSE;

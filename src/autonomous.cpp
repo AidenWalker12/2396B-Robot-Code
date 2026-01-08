@@ -35,35 +35,34 @@ void RedLeft() {
     updateMotorStates();
 }
 void RedRight() {
-    chassis.setPose(0,0,0);
-    chassis.moveToPoint(0, 13.5, 2500);
-    chassis.moveToPoint(0, 13.5, 2500, {.maxSpeed = 300});
-    chassis.turnToHeading(41.45, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .earlyExitRange = 5});
-    config = UP;
-    updateMotorStates();
-    chassis.moveToPoint(.97, 27.74, 2000);
-    chassis.turnToHeading(-45,500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-    pros::delay(500);
-    chassis.turnToHeading(0,500);
-    chassis.turnToHeading(30,500);
-    config = NORUN;
-    updateMotorStates();
-    chassis.turnToHeading(-45,200, {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE});
-    chassis.moveToPoint(8.38, 40.56, 1000, {.maxSpeed = 300});
-    chassis.turnToHeading(-47, 400);
-    pros::delay(500);
-    chassis.moveToPoint(8, 42, 4000);
-    chassis.turnToHeading(-45, 400);
-    config = DOWN;
-    updateMotorStates();
-    pros::delay(1000);
-    config = UP;
-    updateMotorStates();
-    pros::delay(500);
-    config = NORUN;
-    updateMotorStates();
-    chassis.moveToPoint(0,0,2000, {.forwards = false});
-    chassis.turnToHeading(180,1000);
+    // scraper.set_value(false);
+    // config = UP;
+    // updateMotorStates();
+    // chassis.moveToPose(-0.37, 30.5, 0.67, 2500, {.maxSpeed = 70});
+    // pros::delay(2000);
+    // config = NORUN;
+    // updateMotorStates();
+    // chassis.turnToHeading(-77, 900,{.maxSpeed = 63});
+    // chassis.moveToPoint(-11.8, 36.1, 1000);
+    // pros::delay(1000);
+    // config = DOWN;
+    // updateMotorStates();
+    // pros::delay( 1000);
+    // config = UP;
+    // pros::delay( 400);
+    // config = NORUN;
+    // updateMotorStates();
+    // chassis.moveToPoint(32.98, 11.55, 2000,{.forwards = false});
+    // updateMotorStates();
+    // chassis.turnToHeading(-200,800, {.maxSpeed = 63});
+    // scraper.set_value(true);
+    // config = UP;
+    // updateMotorStates();
+    // chassis.moveToPose(36.4, 5.4, -202, 1300);
+    // chassis.moveToPoint(36.4, -12, 1500, {.maxSpeed = 40});
+    // chassis.moveToPoint(29, 23.4, 1000,{.forwards = false, .minSpeed = 70});
+    // chassis.moveToPoint(28.7, 36, 2500, {.forwards = false, .minSpeed = 100});
+    //     hood.set_value(true);
 }
 void BlueRight() {
 

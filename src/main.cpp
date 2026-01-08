@@ -2,15 +2,14 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 
 void updateMotorStates();
-void Autosensor();
 void Penumatics();
 extern int config;
 extern int GLPConfig;
-extern float  angle;
 extern pros::adi::Pneumatics hood;
 extern pros::adi::Pneumatics scraper;
 extern lemlib::Chassis chassis;
 Controller MasterController(pros::E_CONTROLLER_MASTER);
+pros::adi::AnalogIn autosensor('E');
 
 //! Initialize 
 void initialize() {
@@ -29,39 +28,102 @@ void initialize() {
         while (true) {
             // print robot location to the brain screen
             pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-            pros::lcd::print(0, "Y: %f", chassis.getPose().y);         // y
-            pros::lcd::print(0, "Theta: %f", chassis.getPose().theta); // Angle
+            pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
+            pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // Angle
             // log position telemetry
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             // delay to save resources
-            pros::delay(50);
+            pros::lcd::print(3, "%f", firststage.get_actual_velocity());
+            pros::lcd::print(4, "%f", secondstage.get_actual_velocity());
+            updateMotorStates();
+            pros::delay(10);
         }
     });
 }
-
-
-void disabled() {}
-void competition_initialize() {}
-
+void disabled() {
+}
+void competition_initialize() {
+}
 //! Autonomous
 void autonomous() {
-    Autosensor();
-        if(angle >= 0 && angle  <= 30 ) {
+
+        float angle = (float)autosensor.get_value() * (270.0 / 4095.0); 
+            if(angle >= 0 && angle  <= 30 ) {
             pros::lcd::print(3, "Left Red"); // Left Red Autonomous Routine
-           void RedLeft();
-        }
-        else if(angle > 30 && angle <= 125) {
+
+                scraper.set_value(false);
+                config = UP;
+                updateMotorStates();
+                chassis.moveToPose(0.37, 30.5, -0.67, 2500, {.maxSpeed = 70});
+                pros::delay(2000);
+                config = NORUN;
+                updateMotorStates();
+                chassis.turnToHeading(77, 900,{.maxSpeed = 63});
+                // chassis.moveToPoint(11.8, 36.1, 1000);
+                // pros::delay(1000);
+                // config = CENTERGOAL;
+                // updateMotorStates();
+                // pros::delay( 1000);
+                // config = UP;
+                // pros::delay( 400);
+                // config = NORUN;
+                // updateMotorStates();
+                chassis.moveToPoint(-32.98, 11.55, 2000,{.forwards = false});
+                updateMotorStates();
+                chassis.turnToHeading(200,800, {.maxSpeed = 63});
+                scraper.set_value(true);
+                config = UP;
+                updateMotorStates();
+                chassis.moveToPose(-36.4, 5.4, 202, 1300);
+                chassis.moveToPoint(-36.4, -12, 1500, {.maxSpeed = 40});
+                chassis.moveToPoint(-29, 23.4, 1000,{.forwards = false, .minSpeed = 70});
+                chassis.moveToPoint(-28.7, 36, 2500, {.forwards = false, .minSpeed = 100});
+                hood.set_value(true);
+
+            }
+            else if(angle > 30 && angle <= 125) {
             pros::lcd::print(3, "Left Blue"); // Left Blue Autonomous Routine
-            void BlueLeft();
-        }
-        else if(angle > 125 && angle <= 240) {
+
+
+            }
+            else if(angle > 125 && angle <= 240) {
             pros::lcd::print(3, "Right Blue"); // Right Blue Autonomous Routine
-            void BlueRight();
-        }
-        else if(angle > 240 && angle <= 270) {
+
+
+            }
+            else if(angle > 240 && angle <= 270) {
             pros::lcd::print(3, "Right Red"); // Right Red Autonomous Routine
-            void RedRight();
-        }
+
+                scraper.set_value(false);
+                config = UP;
+                updateMotorStates();
+                chassis.moveToPose(-0.37, 30.5, 0.67, 2500, {.maxSpeed = 70});
+                pros::delay(2000);
+                config = NORUN;
+                updateMotorStates();
+                chassis.turnToHeading(-77, 900,{.maxSpeed = 63});
+                chassis.moveToPoint(-11.8, 36.1, 1000);
+                pros::delay(1000);
+                config = DOWN;
+                updateMotorStates();
+                pros::delay( 1000);
+                config = UP;
+                pros::delay( 400);
+                config = NORUN;
+                updateMotorStates();
+                chassis.moveToPoint(32.98, 11.55, 2000,{.forwards = false});
+                updateMotorStates();
+                chassis.turnToHeading(-200,800, {.maxSpeed = 63});
+                scraper.set_value(true);
+                config = UP;
+                updateMotorStates();
+                chassis.moveToPose(36.4, 5.4, -202, 1300);
+                chassis.moveToPoint(36.4, -12, 1500, {.maxSpeed = 40});
+                chassis.moveToPoint(29, 23.4, 1000,{.forwards = false, .minSpeed = 70});
+                chassis.moveToPoint(28.7, 36, 2500, {.forwards = false, .minSpeed = 100});
+                hood.set_value(true);
+
+    }
 }
 //! Operator Control 
 void opcontrol() {
@@ -80,7 +142,8 @@ void opcontrol() {
                         config = (config == UP)          ? NORUN : UP;
         if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))
                         config = (config == DOWN)        ? NORUN : DOWN;
- 
+        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT) && MasterController.get_digital(pros::E_CONTROLLER_DIGITAL_UP))
+                        chassis.setPose(0,0,0);
         //Updates
         updateMotorStates();
         Penumatics();

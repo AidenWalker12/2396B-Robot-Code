@@ -37,6 +37,7 @@
 #include "api.h" // IWYU pragma: keep
 // Add lemlib declarations for shared globals used across source files
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "robodash/api.h" // IWYU pragma: keep
 
 /**
  * You should add more #includes here
@@ -81,7 +82,7 @@ void opcontrol(void);
 // Motor / sensor types are available via `api.h` and `lemlib/api.hpp` above
 // Motor state enums
 enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
-enum Config { NORUN = 0, UP = 1, DOWN = 2, CENTERGOAL = 3, STORAGELONG = 4 };
+enum Config { NORUN = 0, UP = 1, DOWN = 2, CENTERGOAL = 3, MODDOWN = 4 };
 
 // Forward declarations for shared globals (defined in src/main.cpp)
 extern Controller MasterController;

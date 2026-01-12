@@ -2,8 +2,8 @@
 #include "pros/motors.hpp"
 
 //* Individual Motors
-Motor intake(10, pros::MotorGearset::green);
-Motor firststage(-1, pros::MotorGearset::green);
+Motor intake(21, pros::MotorGearset::green);
+Motor firststage(-3  , pros::MotorGearset::green);
 Motor secondstage(-2, pros::MotorGearset::green);
 Motor top(8, pros::MotorGearset::green);
 
@@ -17,8 +17,8 @@ int effectiveConfig = 0;
 
 // Constraints
 const int STOP         = 0;
-const int INTAKE_SPEED = 200;
-const int TOP_SPEED    = 200;
+int INTAKE_SPEED = 200;
+int TOP_SPEED    = 200;
 int FIRSTSTAGE_SPEED   = 200;
 int SECONDSTAGE_SPEED  = 200;
 
@@ -56,22 +56,29 @@ effectiveConfig = config;
             secondstageState = REVERSE;
             topState = REVERSE;
             break;
+        
+        case MODDOWN: // R2
+            intakeState   = REVERSE;
+            firststageState = REVERSE;
+            secondstageState = REVERSE;
+            topState = OFF;
+            break;
 
         
     }
 
 //* Middle Stage Velocity Sync
-    if (firststage.get_target_velocity() != STOP) {
-        if (firststage.get_actual_velocity() < 190 && firststage.get_target_velocity() != STOP) {
-        SECONDSTAGE_SPEED = firststage.get_actual_velocity() + 10;
-    }   else{SECONDSTAGE_SPEED = 200;}
-    }  
+    // if (firststage.get_target_velocity() != STOP) {
+    //     if (firststage.get_actual_velocity() < 190 && firststage.get_target_velocity() != STOP) {
+    //     TOP_SPEED = std::abs(firststage.get_actual_velocity()) + 15;
+    // }   else{TOP_SPEED = 200;}
+    // }  
 
-    if (secondstage.get_target_velocity() != STOP) {
-        if (secondstage.get_actual_velocity() < 190) {
-        FIRSTSTAGE_SPEED = secondstage.get_actual_velocity() + 10;
-    }   else{FIRSTSTAGE_SPEED = 200;}
-    }
+    // if (top.get_target_velocity() != STOP) {
+    //     if (top.get_actual_velocity() < 190) {
+    //     FIRSTSTAGE_SPEED = std::abs(top.get_actual_velocity()) + 15;
+    // }   else{FIRSTSTAGE_SPEED = 200;}
+    // }
 
 
     //* Apply motor velocities

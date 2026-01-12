@@ -2,13 +2,14 @@
 
 
 //* Motor Groups
-MotorGroup leftMotors({-11, 12, -13}, pros::MotorGearset::blue);
+MotorGroup leftMotors({-14, 12, -13}, pros::MotorGearset::blue);
 MotorGroup rightMotors({20, -19, 18}, pros::MotorGearset::blue);
 
 //? Lemlib Odometry
 Imu imu(15);
 Rotation horizontalEnc(-16);
 Rotation verticalEnc(17);
+pros::GPS gps(25);
 
 lemlib::TrackingWheel horizontal(
 						 &horizontalEnc,
@@ -59,7 +60,7 @@ lemlib::OdomSensors sensors(
 							nullptr,
 						  &horizontal,
 					  	  nullptr,
-								  &imu
+                  &imu
 								);
 
 lemlib::ExpoDriveCurve throttleCurve(3, 10, 1.019);

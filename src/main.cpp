@@ -13,7 +13,12 @@ pros::adi::AnalogIn autosensor('E');
 
 //! Initialize 
 void initialize() {
-    pros::lcd::initialize();
+
+}
+void disabled() {
+}
+void competition_initialize() {
+        pros::lcd::initialize();
     chassis.calibrate();
 
     // Motor Brake Modes
@@ -36,13 +41,9 @@ void initialize() {
             pros::lcd::print(3, "%f", firststage.get_actual_velocity());
             pros::lcd::print(4, "%f", secondstage.get_actual_velocity());
             updateMotorStates();
-            pros::delay(10);
+            pros::delay(50);
         }
     });
-}
-void disabled() {
-}
-void competition_initialize() {
 }
 //! Autonomous
 void autonomous() {
@@ -54,8 +55,8 @@ void autonomous() {
                 scraper.set_value(false);
                 config = UP;
                 updateMotorStates();
-                chassis.moveToPose(0.37, 30.5, -0.67, 2500, {.maxSpeed = 70});
-                pros::delay(2000);
+                chassis.moveToPose(2.37, 30.5, -0.67, 2500, {.maxSpeed = 70});
+                pros::delay(2500);
                 config = NORUN;
                 updateMotorStates();
                 chassis.turnToHeading(77, 900,{.maxSpeed = 63});
@@ -70,15 +71,24 @@ void autonomous() {
                 // updateMotorStates();
                 chassis.moveToPoint(-32.98, 11.55, 2000,{.forwards = false});
                 updateMotorStates();
-                chassis.turnToHeading(200,800, {.maxSpeed = 63});
+                chassis.turnToHeading(200,1200, {.maxSpeed = 63});
                 scraper.set_value(true);
+                pros::delay(250);
                 config = UP;
                 updateMotorStates();
-                chassis.moveToPose(-36.4, 5.4, 202, 1300);
-                chassis.moveToPoint(-36.4, -12, 1500, {.maxSpeed = 40});
-                chassis.moveToPoint(-29, 23.4, 1000,{.forwards = false, .minSpeed = 70});
-                chassis.moveToPoint(-28.7, 36, 2500, {.forwards = false, .minSpeed = 100});
+                chassis.moveToPoint(-42, 3.47, 1500, {.maxSpeed = 40});
+                chassis.moveToPoint(-35, 18.6, 1500, { .forwards = false});
+                config = DOWN;
+                updateMotorStates();
+                pros::delay(250);
+                config = NORUN;
+                updateMotorStates();
+                chassis.moveToPoint(-29.8, 26, 1000,{.forwards = false, .maxSpeed = 80 });
+                chassis.moveToPoint(-28.6, 35, 2500, {.forwards = false, .minSpeed = 100});
+                pros::delay (1000);
                 hood.set_value(true);
+                config = UP;
+                updateMotorStates();
 
             }
             else if(angle > 30 && angle <= 125) {
@@ -93,35 +103,47 @@ void autonomous() {
             }
             else if(angle > 240 && angle <= 270) {
             pros::lcd::print(3, "Right Red"); // Right Red Autonomous Routine
-
                 scraper.set_value(false);
                 config = UP;
                 updateMotorStates();
                 chassis.moveToPose(-0.37, 30.5, 0.67, 2500, {.maxSpeed = 70});
-                pros::delay(2000);
+                pros::delay(2450);
                 config = NORUN;
                 updateMotorStates();
                 chassis.turnToHeading(-77, 900,{.maxSpeed = 63});
-                chassis.moveToPoint(-11.8, 36.1, 1000);
+                chassis.moveToPoint(-11.3, 35.9, 1000);
                 pros::delay(1000);
-                config = DOWN;
+                config = MODDOWN;
                 updateMotorStates();
-                pros::delay( 1000);
+                pros::delay( 1700);
                 config = UP;
                 pros::delay( 400);
                 config = NORUN;
                 updateMotorStates();
                 chassis.moveToPoint(32.98, 11.55, 2000,{.forwards = false});
                 updateMotorStates();
-                chassis.turnToHeading(-200,800, {.maxSpeed = 63});
+                chassis.turnToHeading(-215,800, {.maxSpeed = 63});
                 scraper.set_value(true);
                 config = UP;
                 updateMotorStates();
-                chassis.moveToPose(36.4, 5.4, -202, 1300);
-                chassis.moveToPoint(36.4, -12, 1500, {.maxSpeed = 40});
+                chassis.moveToPoint(36.4, 5.4, 1300);
+                chassis.moveToPoint(36.4, -12, 1500, {.maxSpeed = 45});
+                config = UP;
+                updateMotorStates();
+                pros::delay(1000
+                
+                );
+                config = DOWN;
+                updateMotorStates();
+                pros::delay(250);
+                config = NORUN;
+                updateMotorStates();
                 chassis.moveToPoint(29, 23.4, 1000,{.forwards = false, .minSpeed = 70});
                 chassis.moveToPoint(28.7, 36, 2500, {.forwards = false, .minSpeed = 100});
                 hood.set_value(true);
+                pros::delay (500);
+                config = UP;
+                updateMotorStates();
 
     }
 }

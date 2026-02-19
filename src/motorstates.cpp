@@ -2,10 +2,10 @@
 #include "pros/motors.hpp"
 
 //* Individual Motors
-Motor intake(21, pros::MotorGearset::green);
-Motor firststage(-3  , pros::MotorGearset::green);
-Motor secondstage(-2, pros::MotorGearset::green);
-Motor top(8, pros::MotorGearset::green);
+Motor intake(21, pros::MotorGearset::blue);
+Motor firststage(-3  , pros::MotorGearset::blue);
+Motor secondstage(-2, pros::MotorGearset::blue);
+Motor top(8, pros::MotorGearset::blue);
 
 // Global Motor States
 State intakeState      = OFF;
@@ -17,10 +17,10 @@ int effectiveConfig = 0;
 
 // Constraints
 const int STOP         = 0;
-int INTAKE_SPEED = 200;
-int TOP_SPEED    = 200;
-int FIRSTSTAGE_SPEED   = 200;
-int SECONDSTAGE_SPEED  = 200;
+int INTAKE_SPEED = 600;
+int TOP_SPEED    = 600;
+int FIRSTSTAGE_SPEED   = 600;
+int SECONDSTAGE_SPEED  = 600;
 
 //! Update Motor States 
 void updateMotorStates() {
@@ -57,7 +57,7 @@ effectiveConfig = config;
             topState = REVERSE;
             break;
         
-        case MODDOWN: // R2
+        case MODDOWN: // Special
             intakeState   = REVERSE;
             firststageState = REVERSE;
             secondstageState = REVERSE;
@@ -66,20 +66,6 @@ effectiveConfig = config;
 
         
     }
-
-//* Middle Stage Velocity Sync
-    // if (firststage.get_target_velocity() != STOP) {
-    //     if (firststage.get_actual_velocity() < 190 && firststage.get_target_velocity() != STOP) {
-    //     TOP_SPEED = std::abs(firststage.get_actual_velocity()) + 15;
-    // }   else{TOP_SPEED = 200;}
-    // }  
-
-    // if (top.get_target_velocity() != STOP) {
-    //     if (top.get_actual_velocity() < 190) {
-    //     FIRSTSTAGE_SPEED = std::abs(top.get_actual_velocity()) + 15;
-    // }   else{FIRSTSTAGE_SPEED = 200;}
-    // }
-
 
     //* Apply motor velocities
     intake.move_velocity(intakeState == FORWARD ? INTAKE_SPEED :

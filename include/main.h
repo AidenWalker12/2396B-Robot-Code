@@ -37,7 +37,6 @@
 #include "api.h" // IWYU pragma: keep
 // Add lemlib declarations for shared globals used across source files
 #include "lemlib/api.hpp" // IWYU pragma: keep
-#include "robodash/api.h" // IWYU pragma: keep
 
 /**
  * You should add more #includes here
@@ -93,7 +92,6 @@ extern Motor firststage;
 extern Motor secondstage;
 
 
-extern Imu imu;
 extern Rotation horizontalEnc;
 extern Rotation verticalEnc;
 

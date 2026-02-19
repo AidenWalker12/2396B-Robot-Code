@@ -1,3 +1,4 @@
+#include "lemlib/chassis/trackingWheel.hpp"
 #include "main.h"
 
 
@@ -6,71 +7,72 @@ MotorGroup leftMotors({-14, 12, -13}, pros::MotorGearset::blue);
 MotorGroup rightMotors({20, -19, 18}, pros::MotorGearset::blue);
 
 //? Lemlib Odometry
-Imu imu(15);
-Rotation horizontalEnc(-16);
-Rotation verticalEnc(17);
-pros::GPS gps(25);
+pros::Imu imu(15);
+Rotation LeftEnc(-11);
+Rotation RightEnc(16);
 
-lemlib::TrackingWheel horizontal(
-						 &horizontalEnc,
-				   lemlib::Omniwheel::NEW_2,
-					  -7.625
-	);
-
-lemlib::TrackingWheel vertical(
-						&verticalEnc,
-				  lemlib::Omniwheel::NEW_2,
-             .5
-	);
-
+lemlib::TrackingWheel LeftDrivetrain(
+    &LeftEnc,
+    lemlib::Omniwheel::NEW_325,
+    -6.25,
+    4.0/3.0
+    );
+lemlib::TrackingWheel RightDrivetrain(
+    &RightEnc,
+    lemlib::Omniwheel::NEW_325,
+    6.25,
+    4.0/3.0
+    );  
 lemlib::Drivetrain drivetrain(
 	&leftMotors,
 	&rightMotors,
-	12.25,
+	12.5,
 	lemlib::Omniwheel::NEW_325,
 	450,
-	7
-);
-
-lemlib::ControllerSettings lateralController(
-    4.3,                     // proportional gain (kP)
-    0,                      // integral gain (kI)
-    7,                      // derivative gain (kD)
-    3,             // anti windup
-    .1,              // small error range, in inches
-    50,     // small error range timeout, in milliseconds
-    .1,              // large error range, in inches
-    250,     // large error range timeout, in milliseconds
-    0                   // maximum acceleration (slew)
-);
-lemlib::ControllerSettings angularController(
-    1,                      // proportional gain (kP)
-    0,                      // integral gain (kI)
-    8,                     // derivative gain (kD)
-    3,           // anti windup
-    .1,             // small error range, in inches
-    50,     // small error range timeout, in milliseconds
-    .1,              // large error range, in inches
-    250,     // large error range timeout, in milliseconds
-    0                    // maximum acceleration (slew)
+	2
 );
 
 lemlib::OdomSensors sensors(
-							&vertical,
-							nullptr,
-						  &horizontal,
-					  	  nullptr,
-                  &imu
-								);
+	&LeftDrivetrain,
+    &RightDrivetrain,
+	nullptr,
+    nullptr,
+    &imu
+);
 
-lemlib::ExpoDriveCurve throttleCurve(3, 10, 1.019);
-lemlib::ExpoDriveCurve steerCurve(3, 10, 1.019);
+lemlib::ControllerSettings lateralController(
+3.5,                     // proportional gain (kP)
+    0.1,                      // integral gain (kI)
+    2.5,                      // derivative gain (kD)
+    2,             // anti windup
+    .05, // small error range, in inches
+    300, // small error range timeout, in milliseconds
+    .2, // large error range, in inches
+    700, // large error range timeout, in milliseconds
+    1.25// maximum acceleration (slew)
+);
+lemlib::ControllerSettings angularController(
+    2,                      // proportional gain (kP)
+    0.25,                      // integral gain (kI)
+    5,                     // derivative gain (kD)
+    3,           // anti windup
+    1, // small error range, in inches
+    400, // small error range timeout, in milliseconds
+    2, // large error range, in inches
+    700, // large error range timeout, in milliseconds
+    5                   // maximum acceleration (slew)
+);
+
+
+
+lemlib::ExpoDriveCurve throttleCurve(3, 7, 1.008);
+lemlib::ExpoDriveCurve steerCurve(3, 7, 1.08);
 
 lemlib::Chassis chassis(
-                        drivetrain,
-        lateralController,
-       angularController,
-                        sensors,
-         &throttleCurve,
-            &steerCurve
+    drivetrain,
+    lateralController,
+    angularController,
+    sensors,
+    &throttleCurve,
+    &steerCurve
 );

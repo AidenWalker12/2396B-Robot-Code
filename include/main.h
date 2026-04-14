@@ -80,8 +80,8 @@ void opcontrol(void);
 // Shared globals and types used across multiple translation units
 // Motor / sensor types are available via `api.h` and `lemlib/api.hpp` above
 // Motor state enums
-enum State { OFF = 0, FORWARD = 1, REVERSE = 2 };
-enum Config { NORUN = 0, UP = 1, DOWN = 2, CENTERGOAL = 3, MODDOWN = 4 };
+enum State { OFF = 0, FORWARD = 1, REVERSE = 2, STOMPUP = 3, STOMPDOWN = 4, STOMPCENTER = 5 };
+enum Config { NORUN = 0, UP = 1, DOWN = 2, CENTERGOAL = 3, MODDOWN = 4};
 
 // Forward declarations for shared globals (defined in src/main.cpp)
 extern Controller MasterController;

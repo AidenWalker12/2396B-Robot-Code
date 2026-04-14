@@ -14,19 +14,19 @@ Rotation RightEnc(16);
 lemlib::TrackingWheel LeftDrivetrain(
     &LeftEnc,
     lemlib::Omniwheel::NEW_325,
-    -6.25,
+    -6.125,
     4.0/3.0
     );
 lemlib::TrackingWheel RightDrivetrain(
     &RightEnc,
     lemlib::Omniwheel::NEW_325,
-    6.25,
+    6.125,
     4.0/3.0
     );  
 lemlib::Drivetrain drivetrain(
 	&leftMotors,
 	&rightMotors,
-	12.5,
+	12.25,
 	lemlib::Omniwheel::NEW_325,
 	450,
 	2
@@ -41,7 +41,7 @@ lemlib::OdomSensors sensors(
 );
 
 lemlib::ControllerSettings lateralController(
-3.5,                     // proportional gain (kP)
+4.25,                     // proportional gain (kP)
     0.1,                      // integral gain (kI)
     2.5,                      // derivative gain (kD)
     2,             // anti windup
@@ -66,7 +66,7 @@ lemlib::ControllerSettings angularController(
 
 
 lemlib::ExpoDriveCurve throttleCurve(3, 7, 1.008);
-lemlib::ExpoDriveCurve steerCurve(3, 7, 1.08);
+lemlib::ExpoDriveCurve steerCurve(3, 10, 1.01);
 
 lemlib::Chassis chassis(
     drivetrain,

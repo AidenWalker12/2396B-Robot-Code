@@ -1,60 +1,62 @@
 #include "main.h"
-#include "lemlib/api.hpp" // IWYU pragma: keep
-#include "pros/rtos.hpp"
-#include <sys/_intsup.h>
+#include "lemlib/chassis/chassis.hpp"
 
 void updateMotorStates();
 void Penumatics();
-extern int config;
-extern int GLPConfig;
-extern pros::adi::Pneumatics hood;
-extern pros::adi::Pneumatics scraper;
-extern pros::adi::Pneumatics des;
-extern pros::adi::Pneumatics fhood;
+void AutoScore(bool resetpos, bool resetimu, int x, int y);
+void AutoReset();
+extern int config, GLPConfig, FIRSTSTAGE_SPEED, SECONDSTAGE_SPEED;
+extern adi::Pneumatics hood, scraper, des, fhood;
 extern lemlib::Chassis chassis;
-extern int INTAKE_SPEED;
-extern int TOP_SPEED;
-extern int FIRSTSTAGE_SPEED ;
-extern int SECONDSTAGE_SPEED;
+extern Imu imu;
+extern State firststageState, secondstageState, STOMP;
 Controller MasterController(pros::E_CONTROLLER_MASTER);
-pros::adi::AnalogIn autosensor('E');
-    static float savedX = 0, savedY = 0, savedTheta = 0;
+adi::AnalogIn autosensor('E');
+static float savedX = 0, savedY = 0, savedTheta = 0;
+float thetaauto = 0;
+extern int autoreset;
+extern float YSkills, XSkills;
 
 //! Initialize 
 void initialize() {}
 
 void disabled() {}
 
+
 //! Competition Initialize 
 void competition_initialize() {
-        pros::lcd::initialize();
+    lcd::initialize();
     chassis.calibrate();
 
-    
+    delay(750);
 
     // Motor Brake Modes
-    intake.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-    firststage.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-    secondstage.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-    leftMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-    rightMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+    firststage  .set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+    secondstage .set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+    leftMotors  .set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+    rightMotors .set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 
     pros::Task screenTask([&]() {
-        //Odometry Data
         while (true) {
+
             // print robot location to the brain screen
-            pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-            pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
-            pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // Angle
-            pros::lcd::print(3, "X: %f", savedX);
-            pros::lcd::print(4, "Y: %f", savedY);
-            pros::lcd::print(5, "Theta: %f", savedTheta);
+            lcd::print(0, "X: %f", chassis.getPose().x);         // x
+            lcd::print(1, "Y: %f", chassis.getPose().y);         // y
+            lcd::print(2, "Theta: %f", chassis.getPose().theta); // Angle
+            lcd::print(3, "FirstStage Temp: %f", firststage.get_temperature());
+            lcd::print(4, "Secondstage Temp: %f", secondstage.get_temperature());
+
             // log position telemetry
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
-            updateMotorStates();     
+            updateMotorStates();  
+
+        XSkills = chassis.getPose().x;  
+        YSkills = chassis.getPose().y;
+        AutoReset();
+        chassis.setPose(XSkills, YSkills, (imu.get_heading()));   
+
             
-            pros::delay(50);
-            
+            delay(50);
         }
     });
 }
@@ -62,173 +64,122 @@ void competition_initialize() {
 void autonomous() {
 
     //! Tuning Test
-    // chassis.moveToPoint(0, 48, 5000);
-    // chassis.turnToHeading(-90, 5000);
-    // chassis.moveToPoint(-48, 48, 5000);
-    // chassis.turnToHeading(-180, 5000);
-    // chassis.moveToPoint(-48, 0, 5000);
-    // chassis.turnToHeading(-270, 5000);
-    // chassis.moveToPoint(0, 0, 5000);
-    // chassis.turnToHeading(0, 5000);
-    // chassis.moveToPoint(0, 0, 5000);
-    //! Four Block Rush Right
-    // chassis.setPose(0,0, 20.31);
-    // config = UP;
-    // updateMotorStates();
-    // chassis.moveToPoint(4.42, 11.76,1500 );
-    // chassis.moveToPoint(10.15,  25,1500, {}, false );
-    // pros::delay(250);
-    // scraper.set_value(true);
-    // pros::delay(1500);
-    // chassis.moveToPoint(11.2, 28.52, 1500);
-    // chassis.turnToHeading(-40.65, 1500);
-    // pros::delay(1000);
-    // scraper.set_value(false);
-    // config = NORUN;
-    // updateMotorStates();
-    // INTAKE_SPEED = 100;
-    // TOP_SPEED    = 100;
-    // FIRSTSTAGE_SPEED   = 100;
-    // SECONDSTAGE_SPEED  = 100;
-    // chassis.moveToPoint(2.94, 33.1, 1000);
-    // chassis.turnToHeading(-47.2, 1000);
-    // chassis.moveToPoint(-3.7, 36.4,1500  );
-    // chassis.turnToHeading(-44.6, 1500);
-    // pros::delay(1500);
-    // config = MODDOWN;
-    // updateMotorStates();
-    // pros::delay(1500);
-    // config = DOWN;
-    // updateMotorStates();
+        // chassis.moveToPoint(0, 48, 5000);
+        // chassis.turnToHeading(-90, 5000);
+        // chassis.moveToPoint(-48, 48, 5000);
+        // chassis.turnToHeading(-180, 5000);
+        // chassis.moveToPoint(-48, 0, 5000);
+        // chassis.turnToHeading(-270, 5000);
+        // chassis.moveToPoint(0, 0, 5000);
+        // chassis.turnToHeading(0, 5000);
+        // chassis.moveToPoint(0, 0, 5000);
 
+    //! Tuning Test 2
+        // chassis.turnToHeading(90, 99999999);
+    
+    // //! Four Block Rush Right
+        // chassis.setPose(0,0, 20.31);
+        // config = UP;
+        // updateMotorStates();
+        // chassis.moveToPoint(4.42, 10.76,1500 );
+        // chassis.moveToPoint(10.15,  25,1500, {}, true );
+        // pros::delay(1000);
+        // scraper.set_value(true);
+        // pros::delay(1500);
+        // chassis.moveToPoint(11.2, 27.52, 1500);
+        // chassis.turnToHeading(-40.65, 1500);
+        // pros::delay(1000);
+        // scraper.set_value(false);
+        // config = NORUN;
+        // updateMotorStates();
+        // FIRSTSTAGE_SPEED   = 360;
+        // SECONDSTAGE_SPEED  = 450;
+        // chassis.moveToPoint(2.94, 33.1, 1000);
+        // chassis.turnToHeading(-47.2, 1000);
+        // chassis.moveToPoint(-2.7, 36.4,1500  );
+        // chassis.turnToHeading(-44.6, 1500);
+        // pros::delay(1500);
+        // config = MODDOWN;
+        // updateMotorStates();
+        // pros::delay(1500);
+        // config = DOWN;
+        // updateMotorStates();
 
-
-        // float angle = (float)autosensor.get_value() * (270.0 / 4095.0); 
-        //     if(angle >= 0 && angle  <= 30 ) {
-        //     pros::lcd::print(3, "Left Red"); // Left Red Autonomous Routine
-
-                // scraper.set_value(false);
-                // config = UP;
-                // updateMotorStates();
-                // chassis.moveToPose(1.3, 27.7, 7.3, 2500, {.maxSpeed = 70});
-                // pros::delay(2500);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.turnToHeading(69, 900,{.maxSpeed = 63});
-                // chassis.moveToPoint(10.3, 28.4, 1000);
-                // pros::delay(1000);
-                // config = CENTERGOAL;
-                // updateMotorStates();
-                // pros::delay( 1000);
-                // config = UP;
-                // pros::delay( 400);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.moveToPoint(-32.98, 11.55, 2000,{.forwards = false});
-                // updateMotorStates();
-                // chassis.turnToHeading(200,1200, {.maxSpeed = 63});
-                // scraper.set_value(true);
-                // pros::delay(250);
-                // config = UP;
-                // updateMotorStates();
-                // chassis.moveToPoint(-42, 3.47, 1500, {.maxSpeed = 40});
-                // chassis.moveToPoint(-35, 18.6, 1500, { .forwards = false});
-                // config = DOWN;
-                // updateMotorStates();
-                // pros::delay(250);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.moveToPoint(-29.8, 26, 1000,{.forwards = false, .maxSpeed = 80 });
-                // chassis.moveToPoint(-28.6, 35, 2500, {.forwards = false, .minSpeed = 100});
-                // pros::delay (1000);
-                // hood.set_value(true);
-                // config = UP;
-                // updateMotorStates();
-
-            // }
-            // else if(angle > 30 && angle <= 125) {
-            // pros::lcd::print(3, "Left Blue"); // Left Blue Autonomous Routine
-
-
-            // }
-            // else if(angle > 125 && angle <= 240) {
-            // pros::lcd::print(3, "Right Blue"); // Right Blue Autonomous Routine
-
-
-            // }
-            // else if(angle > 240 && angle <= 270) {
-            // pros::lcd::print(3, "Right Red"); // Right Red Autonomous Routine
-                // scraper.set_value(false);
-                // config = UP;
-                // updateMotorStates();
-                // chassis.moveToPoint(0.5, 15.50, 1000);
-                // chassis.moveToPoint(1, 31.00, 1200, {.maxSpeed = 37});
-                // pros::delay(2200);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.turnToHeading(-75, 900,{.maxSpeed = 63});
-                // chassis.moveToPoint(-17.27, 28.05, 800);
-                // chassis.turnToHeading(-72, 500);
-                // pros::delay(100);
-                // config = MODDOWN;
-                // updateMotorStates();
-                // pros::delay( 1300);
-                // config = UP;
-                // pros::delay( 400);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.moveToPoint(26.40, 10.83, 2000,{.forwards = false});
-                // updateMotorStates();
-                // chassis.turnToHeading(-220,1000, {.maxSpeed = 63});
-                // scraper.set_value(true);
-                // config = UP;
-                // updateMotorStates();
-                // chassis.moveToPoint(41.08, -7.47, 1300, {.minSpeed = 63});
-                // config = UP;
-                // updateMotorStates();
-                // pros::delay(2000);
-                // config = DOWN;
-                // updateMotorStates();
-                // pros::delay(250);
-                // config = NORUN;
-                // updateMotorStates();
-                // chassis.moveToPose(34, 8.5, -200, 1000, {.forwards = false});
-                // chassis.moveToPoint(29.5, 19.9, 3000, {.forwards = false, .minSpeed = 60});
-                // hood.set_value(true);
-                // pros::delay (1750);
-                // config = UP;
-                // updateMotorStates();
-
-    // }
-
+    //! Dany Auton
+        // chassis.moveToPoint(0, 3, 1500);
 
     //! Skillz
-    chassis.moveToPoint(0, 7, 2000);
-    chassis.turnToHeading(90, 2000);
-    chassis.moveToPoint(48, 1, 3000, {.maxSpeed = 63});
-    chassis.turnToHeading(180, 2000);
-    pros::delay(2000);
-    chassis.setPose(48,5,180);
-    //Turn to face the loader
-    scraper.set_value(true);
-    config = UP;
-    chassis.moveToPoint(45.5, -20, 2000, {.maxSpeed = 63});
-    chassis.moveToPoint(45.5, -22, 1000);
-    pros::delay(1500);
-    config = NORUN;
-    chassis.moveToPoint(36, 16, 2000, {.forwards = false});
-    chassis.moveToPose(36, 102, 180, 2000, {.forwards = false});
-    chassis.swingToHeading(0,  DriveSide::LEFT, 2000);
-    chassis.moveToPoint(44.6, 67, 1000, {.forwards = false});
-
-    
+        chassis.moveToPoint(0, 26, 1500, {.minSpeed = 20,.earlyExitRange = 6});
+        // chassis.moveToPose(12,18, 90, 1500, {.lead = 1,.earlyExitRange = 2});
+        chassis.moveToPose(31, 5, 180, 2500, { .lead = .4,.minSpeed = 10, .earlyExitRange = 1}, true);
+        scraper.extend();
+        SECONDSTAGE_SPEED = 300;
+        config = UP;
+        chassis.moveToPoint(32, -5, 3000, {.minSpeed = 25, .earlyExitRange = 0.000}, false);
+        config = NORUN;
+        // Start move to the long goal
+        chassis.moveToPoint(29, 7, 3000, {.forwards = false,  .minSpeed = 35, .earlyExitRange = 2}, false);
+        chassis.moveToPose(47, 32, 180, 5000, {.forwards = false, .minSpeed = 40, .earlyExitRange = 2});
+        chassis.moveToPose(48, 101, 181, 6000, {.forwards = false, .minSpeed = 80, .earlyExitRange = 2});
+        chassis.moveToPose(32, 90, 0, 2000, {.forwards = false});
+        // chassis.swingToHeading(345, DriveSide::RIGHT, 2000,{ .direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+        // chassis.moveToPose(42, 83, 1, 2000, {.forwards = false, .maxSpeed = 40, .earlyExitRange = .5});
+        // Slam into long goal and than score
+        chassis.moveToPose(31, 90, 0, 1500,{.forwards = false}, false);
+        chassis.moveToPoint(31, 40, 1500,{.forwards = false, .minSpeed = 60}, false);
+        delay(300);
+        AutoScore(true, true, 0, 0);
+        // Begin move to the second loader
+        chassis.moveToPoint(0, 24, 1500, {.minSpeed = 20, .earlyExitRange = 2}, false);
+        hood.retract();
+        SECONDSTAGE_SPEED = 300;
+        chassis.moveToPoint(1, 33, 3000, {.minSpeed = 27, .earlyExitRange = 0.000}, false);
+        chassis.moveToPoint(1, 17.5, 1500,{.forwards = false, .minSpeed = 50, .earlyExitRange = 2}, false);
+        // Slam into the long goal and score again
+        chassis.moveToPose(0, 0, 0, 1500,{.forwards = false, .minSpeed = 80}, false);
+        chassis.moveToPose(0, -40, 0, 1500,{.forwards = false, .maxSpeed = 80}, false);
+        delay(500);
+        AutoScore(true, true, 0, 0);
+    //! Cont
+        chassis.moveToPoint(0, 6, 1000, {.minSpeed = 50, .earlyExitRange = 1});
+        chassis.moveToPose(-80, 10, 270, 7000, {.lead = .3, .minSpeed = 80, .earlyExitRange = 2});
+        chassis.moveToPose(-96, 23, 0, 3000,{}, false);
+        hood.retract();
+        SECONDSTAGE_SPEED = 300;
+        config = UP;
+        chassis.moveToPoint(-95, 35, 3000, {.minSpeed = 27, .earlyExitRange = 0.000}, false);
+        // pose (-96, 33, 0) is the second loader
+        config = NORUN;
+        // Start move to the long goal
+        chassis.moveToPoint(-94, 21, 3000, {.forwards = false,  .minSpeed = 35, .earlyExitRange = 2}, false);
+        chassis.moveToPose(-112, -4, 360, 5000, {.forwards = false, .minSpeed = 40, .earlyExitRange = 2});
+        chassis.moveToPose(-113, -73, 1, 6000, {.forwards = false, .minSpeed = 80, .earlyExitRange = 2});
+        chassis.moveToPose(-98, -60, 180, 1500,{.forwards = false}, false);
+        // chassis.swingToHeading(165, DriveSide::RIGHT, 2000,{ .direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+        chassis.moveToPose(-98, -53.5, 180, 2000, {.forwards = false, .maxSpeed = 40, .earlyExitRange = .5});
+        // Slam into long goal and than score
+        chassis.moveToPoint(-98, -12, 1000,{.forwards = false, .minSpeed = 80}, false);
+        delay(300);
+        AutoScore(true, true, 0, 0);
+        // Begin move to the second loader
+        chassis.moveToPoint(0, 24, 1500, {.minSpeed = 20, .earlyExitRange = 2}, false);
+        hood.retract();
+        SECONDSTAGE_SPEED = 300;
+        chassis.moveToPoint(0, 35, 3000, {.minSpeed = 22, .earlyExitRange = 0.000}, false);
+        // Slam into the long goal and score again
+        chassis.moveToPoint(0, 17.5, 1500,{.forwards = false, .minSpeed = 50, .earlyExitRange = 2}, false);
+        chassis.moveToPose(0, -40, 180, 1500,{.forwards = false, .minSpeed = 80}, false);
+        delay(500);
+        AutoScore(true, false, 0, 0);
+        config = NORUN;
+        scraper.retract();
+        chassis.moveToPoint(0, 10, 500);
+        chassis.moveToPoint(-50, 35, 3000, {.forwards = false});
 }
 //! Operator Control 
 void opcontrol() {
 
     //Set Initial Speeds for Driver Control
-    INTAKE_SPEED       = 600;
-    TOP_SPEED          = 600;
     FIRSTSTAGE_SPEED   = 600;
     SECONDSTAGE_SPEED  = 600;
 
@@ -240,14 +191,28 @@ void opcontrol() {
         int rightX = MasterController.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
         chassis.arcade(leftY, rightX, false, 0.75);
 
-        // Config toggles 
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1))
+        // Controller
+        if (MasterController.get_digital_new_press(E_CONTROLLER_DIGITAL_R1)) {
                         config = (config == CENTERGOAL)  ? NORUN : CENTERGOAL;
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1))
-                        config = (config == UP)          ? NORUN : UP;
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2))
-                        config = (config == DOWN)        ? NORUN : DOWN;
-        if (MasterController.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT) && MasterController.get_digital(pros::E_CONTROLLER_DIGITAL_UP))
+                FIRSTSTAGE_SPEED = 600;
+                SECONDSTAGE_SPEED = 600;
+        }
+        if (MasterController.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)) {
+            config = (config == MODDOWN)  ? NORUN : MODDOWN;
+            FIRSTSTAGE_SPEED =  400;
+            SECONDSTAGE_SPEED = 400;
+                        }
+        if (MasterController.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)) {
+                config = (config == UP)          ? NORUN : UP;
+                FIRSTSTAGE_SPEED = 600;
+                SECONDSTAGE_SPEED = 600;
+        }
+        if (MasterController.get_digital_new_press(E_CONTROLLER_DIGITAL_L2)) {
+                config = (config == DOWN)        ? NORUN : DOWN;
+                FIRSTSTAGE_SPEED = 600;
+                SECONDSTAGE_SPEED = 600;
+        }
+        if (MasterController.get_digital_new_press(E_CONTROLLER_DIGITAL_LEFT) && MasterController.get_digital(pros::E_CONTROLLER_DIGITAL_UP))
                         chassis.setPose(0,0,0);
 
         //Updates
